@@ -17,12 +17,21 @@ postsRouter.post("/", async (req, res, next) => {
 
 postsRouter.get("/", async (req, res, next) => {
   try {
-    const posts = await postsModel.find()
+    const page = req.query.page ? parseInt(req.query.page) : 1;
+    const limit = req.query.limit ? parseInt(req.query.limit) : 10;
+    if(isNaN(page) || isNaN(limit)){
+      return res.status(400).send({ error: 'Invalid query parameters' });
+    }
+    if(limit > 50 || limit <= 0){
+      return res.status(400).send({ error: 'Invalid limit value' });
+    }
+    const posts = await postsModel.find().skip((page - 1) * limit).limit(limit);
     res.send(posts)
   } catch (error) {
     next(error)
   }
-})
+});
+
 
 postsRouter.get("/:postId", async (req, res, next) => {
     try {
