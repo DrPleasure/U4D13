@@ -14,10 +14,7 @@ const postsSchema = new Schema(
           unit: {type: String, required: true},
 
         },
-        author: {
-          name: {type: String},
-          avatar:{type: String},
-        },
+        authors: [{ type: Schema.Types.ObjectId, ref: "Author" }],
         	    content:  {type: String, required: true},
               
 
@@ -27,7 +24,22 @@ const postsSchema = new Schema(
     })   
 
 
-      
+      // ********************************************************* MONGOOSE CUSTOM METHOD **************************************************************
+
+postsSchema.static("findBooksWithAuthors", async function (query) {
+  const total = await this.countDocuments(query.criteria)
+
+  const posts = await this.find(query.criteria, query.options.fields)
+    .skip(query.options.skip)
+    .limit(query.options.limit)
+    .sort(query.options.sort)
+    .populate({
+      path: "authors",
+      select: "firstName lastName",
+    })
+
+  return { total, posts }
+})
 
 
 

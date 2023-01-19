@@ -27,7 +27,10 @@ postsRouter.get("/", async (req, res, next) => {
 
 postsRouter.get("/:postId", async (req, res, next) => {
     try {
-        const post = await postsModel.findById(req.params.postId)
+        const post = await postsModel.findById(req.params.postId).populate({
+          path: "authors",
+          select: "firstName lastName",
+        })
         if (post) {
           res.send(post)
         } else {
