@@ -4,6 +4,8 @@ import cors from "cors"
 import mongoose from "mongoose"
 import postsRouter from "./api/posts/index.js"
 import commentsRouter from "./api/comments/index.js"
+import usersRouter from "./api/users/index.js"
+
 import authorsRouter from "./api/authors/index.js"
 import {
   badRequestHandler,
@@ -19,6 +21,8 @@ server.use(cors())
 server.use(express.json())
 
 // ******************************** ENDPOINTS *****************************************
+server.use("/users", usersRouter)
+
 server.use("/posts", postsRouter)
 server.use('/', commentsRouter)
 server.use("/authors", authorsRouter)

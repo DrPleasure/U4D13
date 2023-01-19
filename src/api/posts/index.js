@@ -4,6 +4,9 @@ import postsModel from "./model.js"
 
 const postsRouter = express.Router()
 
+
+
+
 postsRouter.post("/", async (req, res, next) => {
   try {
     const newPost = new postsModel(req.body)
@@ -25,6 +28,20 @@ postsRouter.get("/", async (req, res, next) => {
   }
 })
 
+postsRouter.get("/:postId/likes", async (req, res) => {
+  try {
+    const post = await postsModel.findOne({ title: req.params.title }).select("likes");
+    if (!post) {
+        throw createHttpError(404, "Post not found");
+    }
+    const likes = post.likes;
+    res.json({ likes });
+  } catch (err) {
+    next(err);
+  }
+});
+
+
 postsRouter.get("/:postId", async (req, res, next) => {
     try {
         const post = await postsModel.findById(req.params.postId).populate({
@@ -41,31 +58,32 @@ postsRouter.get("/:postId", async (req, res, next) => {
       }
     })
 
-postsRouter.put("/:postId", async (req, res, next) => {
-    try {
-        const updatedPost = await postsModel.findByIdAndUpdate(
-          req.params.postId, // WHO you want to modify
-          req.body, // HOW you want to modify
-          { new: true, runValidators: true } // options. By default findByIdAndUpdate returns the record pre-modification. If you want to get back the newly updated record you shall use new:true
-          // By default validation is off in the findByIdAndUpdate --> runValidators:true
-        )
-    
-        // ****************************************** ALTERNATIVE METHOD ********************************************
-        /*     const user = await UsersModel.findById(req.params.userId)
-        // When you do a findById, findOne,.... you get back a MONGOOSE DOCUMENT which is NOT a normal object
-        // It is an object with superpowers, for instance it has the .save() method that will be very useful in some cases
-        user.age = 100
-        await user.save() */
-    
-        if (updatedPost) {
-          res.send(updatedPost)
-        } else {
-          next(createHttpError(404, `User with id ${req.params.postId} not found!`))
+    postsRouter.put("/:postId", async (req, res, next) => {
+      try {
+          const currentLikes = await postsModel.findById(req.params.postId).select("likes");
+          let newLikes;
+          if (action === "like") {
+            await Post.findOneAndUpdate({ _id: postId }, { $addToSet: { likes: userId } });
+        } else if (action === "unlike") {
+            await Post.findOneAndUpdate({ _id: postId }, { $pull: { likes: userId } });
         }
-      } catch (error) {
-        next(error)
-      }
-    })
+          req.body.likes = newLikes;
+          const updatedPost = await postsModel.findByIdAndUpdate(
+            req.params.postId,
+            req.body,
+            { new: true, runValidators: true }
+          );
+      
+          if (updatedPost) {
+            res.send(updatedPost);
+          } else {
+            next(createHttpError(404, `Post with id ${req.params.postId} not found!`));
+          }
+        } catch (error) {
+          next(error);
+        }
+  });
+  
 
 postsRouter.delete("/:postId", async (req, res, next) => {
     try {
@@ -80,5 +98,17 @@ postsRouter.delete("/:postId", async (req, res, next) => {
         next(error)
       }
     })
+
+    postsRouter.post("/:id/likes", async (req, res) => {
+      const post = await Post.findById(req.params.id);
+      await post.addLike(req.body.userId);
+      res.send("Like added!");
+    });
+    
+    postsRouter.delete("/:id/likes", async (req, res) => {
+      const post = await Post.findById(req.params.id);
+      await post.removeLike(req.body.userId);
+      res.send("Like removed!");
+    });
 
 export default postsRouter
